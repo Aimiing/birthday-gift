@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>只给你一个人</title>
+<link rel="icon" href="data:,">
+
+<!-- 字体：异步加载 Noto，失败回退系统宋体/黑体（国内可稳定显示） -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+
+<style>
+  :root {
+    --bg: #F5F0E6;
+    --bg-glow: #F6E0C4;
+    --ink: #2B2622;
+    --body: #8D847A;
+    --weak: #A79E92;
+    --gold: #D9B896;
+    --card1: #FCFAF6;
+    --card2: #F2EFE9;
+    --card3: #F7ECE3;
+    --track: #E6E0D4;
+    --border: #E9E2D7;
+    --btn: #241E17;
+    --btn-text: #F5F2EA;
+    --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    --sans: "Noto Sans SC", "Source Han Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: #E9E3D7;
+    color: var(--ink);
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ---------- 背景层（固定，装饰） ---------- */
+  .bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .bg-inner {
+    position: absolute;
+    inset: 0;
+    margin: 0 auto;
+    max-width: 430px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 90% at 88% -8%, rgba(246,224,196,.60), transparent 62%),
+      radial-gradient(100% 82% at -8% 112%, rgba(247,236,227,.55), transparent 58%),
+      var(--bg);
+  }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    will-change: transform;
+  }
+  .blob-1 { width: 200px; height: 200px; top: -60px; left: -70px;
+    background: radial-gradient(circle at 32% 30%, rgba(252,250,246,.95), rgba(247,236,227,.30) 72%); opacity: .7; }
+  .blob-2 { width: 150px; height: 150px; top: 12%; right: -60px;
+    background: radial-gradient(circle at 40% 35%, rgba(247,236,227,.9), rgba(217,184,150,.25) 75%); opacity: .55; }
+  .blob-3 { width: 120px; height: 120px; bottom: 16%; left: -40px;
+    background: radial-gradient(circle at 35% 30%, rgba(217,184,150,.45), rgba(217,184,150,.08) 74%); opacity: .5; }
+  .blob-4 { width: 90px; height: 90px; bottom: 34%; right: -20px;
+    background: radial-gradient(circle at 40% 40%, rgba(252,250,246,.85), rgba(246,224,196,.30) 70%); opacity: .45; }
+  .blob-5 { width: 70px; height: 70px; top: 42%; left: -16px;
+    background: radial-gradient(circle at 45% 40%, rgba(247,236,227,.8), rgba(247,236,227,.15) 70%); opacity: .5; }
+
+  .curves { position: absolute; inset: 0; }
+  .curve-a { position: absolute; left: -8px; top: 6%; width: 110px; opacity: .5; }
+  .curve-b { position: absolute; right: -6px; bottom: 8%; width: 130px; opacity: .4; }
+
+  .noise {
+    position: absolute; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: .05;
+    mix-blend-mode: soft-light;
+  }
+
+  /* ---------- 内容容器 ---------- */
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top, 0px) + 28px) 24px calc(env(safe-area-inset-bottom, 0px) + 32px);
+    display: flex;
+    flex-direction: column;
+  }
+  @media (min-width: 470px) {
+    .app { box-shadow: 0 0 0 1px rgba(43,38,34,.04), 0 24px 70px -30px rgba(43,38,34,.35); }
+  }
+
+  /* ---------- 屏幕切换 ---------- */
+  .screen { display: none; flex: 1; }
+  .screen.active { display: flex; flex-direction: column; animation: screenIn .55s cubic-bezier(.22,.8,.36,1); }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 26px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; color: var(--body); font-size: 14px; letter-spacing: .06em; }
+  .heart { font-size: 15px; color: var(--gold); }
+  .pageno { color: var(--weak); font-size: 13px; letter-spacing: .16em; }
+
+  /* ---------- 进度条 ---------- */
+  .progress { height: 6px; border-radius: 999px; background: var(--track); margin-bottom: 30px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 999px; background: var(--ink); transition: width .5s cubic-bezier(.22,.8,.36,1); }
+
+  /* ---------- 首页 ---------- */
+  .home-hero { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; }
+  .home-title {
+    font-family: var(--serif); font-weight: 900;
+    font-size: clamp(21px, 6.4vw, 29px); line-height: 1.48; letter-spacing: .01em;
+    margin: 8px 0 14px;
+    text-wrap: balance;
+  }
+  .home-sub { color: var(--body); font-size: 15px; line-height: 1.7; margin: 0 0 26px; }
+  .gift-art { width: min(78%, 300px); height: auto; margin: 6px 0 26px; }
+  .home-info { display: flex; flex-direction: column; align-items: center; gap: 9px; color: var(--body); font-size: 14px; margin-bottom: 30px; }
+  .home-info .row { display: flex; align-items: baseline; }
+  .home-info .k { width: 3.4em; text-align: right; color: var(--body); }
+  .home-info .v { margin-left: 10px; color: var(--ink); font-weight: 500; }
+  .home-info .rounds { margin-top: 2px; letter-spacing: .03em; }
+
+  /* ---------- 按钮 ---------- */
+  .btn {
+    appearance: none; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--btn); color: var(--btn-text);
+    font-family: var(--sans); font-size: 16px; font-weight: 500; letter-spacing: .05em;
+    padding: 16px 34px; border-radius: 999px;
+    transition: transform .18s ease, opacity .18s ease;
+    box-shadow: 0 12px 26px -12px rgba(36,30,23,.55);
+  }
+  .btn:active { transform: scale(.96); }
+  .btn.ghost { background: transparent; color: var(--body); box-shadow: none; border: 1px solid var(--border); }
+  .btn:disabled { opacity: .45; pointer-events: none; }
+  .btn-block { width: 100%; }
+  /* 内容不足时把主按钮压到底部，避免大片空白 */
+  .screen > .btn:last-child, .screen > .btn-block:last-child { margin-top: auto; }
+
+  /* ---------- 通用标题（轮次页） ---------- */
+  .round-head { margin-bottom: 18px; }
+  .round-title { font-family: var(--serif); font-weight: 900; font-size: clamp(22px, 6.2vw, 27px); line-height: 1.4; margin: 0; }
+  .round-hint { color: var(--body); font-size: 14px; margin: 8px 0 0; }
+
+  /* ---------- 第 1 轮：翻卡 ---------- */
+  .cards { display: flex; flex-direction: column; gap: 16px; margin: 8px 0 30px; }
+  .card { perspective: 1200px; cursor: pointer; }
+  .card-inner {
+    display: grid; width: 100%;
+    transform-style: preserve-3d; transition: transform .62s cubic-bezier(.3,.7,.3,1);
+  }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+  .card-face {
+    grid-area: 1 / 1; min-height: 96px; border-radius: 22px;
+    display: flex; align-items: center; gap: 14px; padding: 18px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border: 1px solid var(--border);
+  }
+  .card-front { background: var(--card1); }
+  .card-front .icon {
+    width: 58px; height: 58px; border-radius: 16px; flex: 0 0 auto;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px solid var(--border); font-size: 26px;
+  }
+  .card-front .meta { flex: 1; min-width: 0; }
+  .card-front .t { font-family: var(--serif); font-weight: 700; font-size: 17px; }
+  .card-front .tag { color: var(--weak); font-size: 12px; margin-top: 3px; letter-spacing: .04em; }
+  .card-front .arrow { color: var(--weak); font-size: 15px; }
+  .card-back {
+    background: var(--card3); transform: rotateY(180deg);
+    align-items: center; justify-content: flex-start; text-align: left;
+    color: var(--ink); font-size: 14.5px; line-height: 1.75; white-space: pre-line;
+  }
+  .card:nth-child(2) .card-front { background: var(--card2); }
+
+  /* ---------- 第 2 轮：答题 ---------- */
+  .quiz-q { font-family: var(--serif); font-weight: 700; font-size: 19px; line-height: 1.6; margin: 6px 0 24px; }
+  .opts { display: flex; flex-direction: column; gap: 14px; margin-bottom: 26px; }
+  .opt {
+    appearance: none; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 14px;
+    background: var(--card1); border: 1px solid var(--border); border-radius: 18px;
+    padding: 16px 18px; font-family: var(--sans); font-size: 15.5px; color: var(--ink);
+    transition: transform .16s ease, background .3s ease, border-color .3s ease;
+  }
+  .opt:active { transform: scale(.98); }
+  .opt .em { font-size: 22px; }
+  .opt.correct { background: var(--card3); border-color: #E4CBB7; }
+  .opt.wrong { animation: shake .4s ease; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-8px); }
+    40%,80% { transform: translateX(8px); }
+  }
+  .quiz-feedback { font-size: 14px; color: var(--body); min-height: 22px; margin: 2px 0 16px; }
+  .quiz-feedback.ok { color: var(--ink); }
+
+  /* ---------- 第 3 轮：拆礼物 ---------- */
+  .round3-stage { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+  .giftbox-wrap { position: relative; margin: 4px 0 30px; transition: opacity .55s ease, transform .55s ease; }
+  .giftbox-wrap.hide { opacity: 0; transform: scale(.78) translateY(14px); pointer-events: none; }
+  .giftbox { width: min(74%, 270px); height: auto; overflow: visible; }
+  .giftbox .lid { transform-origin: 50% 92%; transition: transform .75s cubic-bezier(.3,.7,.3,1), opacity .75s ease; }
+  .giftbox.open .lid { transform: translateY(-78px) rotate(-13deg); opacity: 0; }
+  .giftbox .body { transition: transform .75s cubic-bezier(.3,.7,.3,1); }
+  .giftbox.open .body { transform: scale(.94, .88); }
+  .giftbox.shake { animation: boxShake .5s ease; }
+  @keyframes boxShake {
+    0%,100% { transform: rotate(0); }
+    20% { transform: rotate(-6deg) translateY(2px); }
+    40% { transform: rotate(5deg) translateY(-2px); }
+    60% { transform: rotate(-4deg); }
+    80% { transform: rotate(3deg); }
+  }
+  .gift-reveal {
+    display: none; flex-direction: column; align-items: center; text-align: center;
+    animation: screenIn .65s cubic-bezier(.22,.8,.36,1);
+  }
+  .gift-reveal.show { display: flex; }
+  .gift-emoji {
+    width: 104px; height: 104px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 46px; margin-bottom: 20px;
+    background: radial-gradient(circle at 35% 30%, #FFFFFF, #F7ECE3 78%);
+    border: 1px solid var(--border);
+    box-shadow: 0 18px 34px -20px rgba(43,38,34,.35);
+  }
+  .gift-name { font-family: var(--serif); font-weight: 900; font-size: 25px; line-height: 1.45; }
+  .gift-desc { color: var(--body); font-size: 15px; line-height: 1.85; white-space: pre-line; margin: 14px 0 0; max-width: 310px; }
+
+  /* ---------- 最终：读信 ---------- */
+  .final-stage { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; }
+  .heart-ring {
+    width: 92px; height: 92px; border-radius: 50%;
+    border: 1.5px solid var(--gold); display: flex; align-items: center; justify-content: center;
+    color: var(--ink); font-size: 34px; margin-bottom: 20px;
+  }
+  .final-title { font-family: var(--serif); font-weight: 900; font-size: clamp(22px, 6.2vw, 27px); margin: 0 0 18px; }
+  .letter {
+    background: var(--card1); border: 1px solid var(--border); border-radius: 22px;
+    padding: 30px 26px; max-width: 360px; width: 100%;
+    color: var(--body); font-size: 15px; line-height: 2; white-space: pre-line; text-align: left;
+  }
+  .letter .sign { text-align: right; font-weight: 700; color: var(--ink); margin-top: 10px; }
+  .final-done { color: var(--weak); font-size: 13px; letter-spacing: .06em; margin: 26px 0 16px; }
+
+  /* ---------- 彩屑 ---------- */
+  .confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+  .confetti {
+    position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall {
+    to { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- 背景装饰 -->
+  <div class="bg">
+    <div class="bg-inner">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+      <div class="blob blob-4"></div>
+      <div class="blob blob-5"></div>
+      <div class="curves">
+        <svg class="curve-a" viewBox="0 0 100 320" fill="none">
+          <path d="M2 60 C 70 110, -20 180, 46 260" stroke="#D9B896" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <svg class="curve-b" viewBox="0 0 120 340" fill="none">
+          <path d="M118 40 C 50 120, 130 210, 66 320" stroke="#D9B896" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="noise"></div>
+    </div>
+  </div>
+
+  <!-- 内容 -->
+  <main class="app">
+
+    <!-- 首页 · 打开礼物 -->
+    <section class="screen active" id="screen-home">
+      <header class="topbar">
+        <div class="brand"><span class="heart">♡</span><span id="home-brand">只给你一个人</span></div>
+        <div class="pageno">01 / 05</div>
+      </header>
+      <div class="home-hero">
+        <h1 class="home-title" id="home-title">我们一起过的第一个生日<br>我把心意装进了盲盒</h1>
+        <p class="home-sub" id="home-sub">从一个惊喜开始，一点点拆给你看</p>
+        <svg class="gift-art" viewBox="0 0 220 200" fill="none" stroke="#2B2622" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <!-- 盖子（上抬，掀开，不透明填充） -->
+          <rect x="34" y="26" width="152" height="36" rx="8" fill="#FBF7EF"/>
+          <line x1="110" y1="26" x2="110" y2="62"/>
+          <!-- 蝴蝶结（对称双环 + 飘带，盖在盖顶） -->
+          <g fill="none" stroke="#D9B896" stroke-width="2.2">
+            <path d="M110 16 C 95 3 80 13 89 24 C 96 31 108 28 110 22"/>
+            <path d="M110 16 C 125 3 140 13 131 24 C 124 31 112 28 110 22"/>
+            <path d="M110 22 L 103 34"/>
+            <path d="M110 22 L 117 34"/>
+          </g>
+          <!-- 左卡片：爱心（盒口探出，底被盒身遮住） -->
+          <g transform="rotate(-6 76 130)">
+            <rect x="52" y="72" width="48" height="58" rx="6" fill="#F7ECE3"/>
+            <text x="76" y="108" text-anchor="middle" font-size="28" fill="#2B2622" stroke="none" font-family="serif">♡</text>
+          </g>
+          <!-- 右卡片：星星（盒口探出，底被盒身遮住） -->
+          <g transform="rotate(7 146 126)">
+            <rect x="122" y="68" width="48" height="58" rx="6" fill="#FCFAF6"/>
+            <text x="146" y="104" text-anchor="middle" font-size="28" fill="#2B2622" stroke="none" font-family="serif">☆</text>
+          </g>
+          <!-- 盒身（前，不透明填充遮住卡片底） -->
+          <rect x="42" y="120" width="136" height="74" rx="9" fill="#FCFAF6"/>
+          <line x1="110" y1="120" x2="110" y2="194"/>
+          <!-- 闪光 -->
+          <path d="M26 52 l2.6 7 7 2.6 -7 2.6 -2.6 7 -2.6 -7 -7 -2.6 7 -2.6 z" fill="#D9B896" stroke="none"/>
+          <path d="M198 20 l2.4 6.4 6.4 2.4 -6.4 2.4 -2.4 6.4 -2.4 -6.4 -6.4 -2.4 6.4 -2.4 z" fill="#D9B896" stroke="none"/>
+          <path d="M206 96 l2 5.5 5.5 2 -5.5 2 -2 5.5 -2 -5.5 -5.5 -2 5.5 -2 z" fill="#D9B896" stroke="none" opacity=".55"/>
+        </svg>
+        <div class="home-info">
+          <div class="row"><span class="k">来自</span><b class="v" id="home-sender">陈靖雯</b></div>
+          <div class="row"><span class="k">收件人</span><b class="v" id="home-receiver">耿晨皓</b></div>
+          <div class="rounds" id="home-rounds">3 轮惊喜等你拆开</div>
+        </div>
+        <button class="btn" onclick="goTo('screen-round1')" id="home-button">打开礼物</button>
+      </div>
+    </section>
+
+    <!-- 第 1 轮 · 猜猜看 -->
+    <section class="screen" id="screen-round1">
+      <header class="topbar">
+        <div class="brand"><span class="heart">♡</span><span id="r1-label">第 1 轮 · 猜猜看</span></div>
+        <div class="pageno">02 / 05</div>
+      </header>
+      <div class="progress"><div class="progress-fill" style="width:33.33%"></div></div>
+      <div class="round-head">
+        <h2 class="round-title" id="r1-title">猜猜看</h2>
+        <p class="round-hint" id="r1-hint">点开一张卡片，看看是什么</p>
+      </div>
+      <div class="cards" id="r1-cards"></div>
+      <button class="btn btn-block" onclick="goTo('screen-round2')" id="r1-next">下一轮 →</button>
+    </section>
+
+    <!-- 第 2 轮 · 回忆小考验 -->
+    <section class="screen" id="screen-round2">
+      <header class="topbar">
+        <div class="brand"><span class="heart">♡</span><span id="r2-label">第 2 轮 · 回忆小考验</span></div>
+        <div class="pageno">03 / 05</div>
+      </header>
+      <div class="progress"><div class="progress-fill" style="width:66.66%"></div></div>
+      <div class="round-head">
+        <h2 class="round-title" id="r2-title">回忆小考验</h2>
+        <p class="round-hint" id="r2-hint">答对了，才能进入下一轮哦</p>
+      </div>
+      <p class="quiz-q" id="r2-question"></p>
+      <div class="opts" id="r2-opts"></div>
+      <div class="quiz-feedback" id="r2-feedback"></div>
+      <button class="btn btn-block" onclick="goTo('screen-round3')" id="r2-next" disabled>进入第 3 轮 →</button>
+    </section>
+
+    <!-- 第 3 轮 · 真正的礼物 -->
+    <section class="screen" id="screen-round3">
+      <header class="topbar">
+        <div class="brand"><span class="heart">♡</span><span id="r3-label">第 3 轮 · 真正的礼物</span></div>
+        <div class="pageno">04 / 05</div>
+      </header>
+      <div class="progress"><div class="progress-fill" style="width:100%"></div></div>
+      <div class="round3-stage">
+        <div class="round-head" style="text-align:center">
+          <h2 class="round-title" id="r3-title">真正的礼物</h2>
+          <p class="round-hint" id="r3-hint">拆开看看，里面是什么？</p>
+        </div>
+
+        <div class="giftbox-wrap">
+          <svg class="giftbox" id="giftbox" viewBox="0 0 220 210" fill="none" stroke="#2B2622" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <g class="body">
+              <rect x="44" y="86" width="132" height="104" rx="9" fill="#FCFAF6"/>
+              <line x1="110" y1="86" x2="110" y2="190"/>
+            </g>
+            <g class="lid">
+              <rect x="30" y="46" width="160" height="42" rx="8" fill="#FBF7EF"/>
+              <line x1="110" y1="46" x2="110" y2="88"/>
+              <g fill="none" stroke="#D9B896" stroke-width="2.2">
+                <path d="M110 52 C 94 36 78 46 88 58 C 96 65 108 60 110 54"/>
+                <path d="M110 52 C 126 36 142 46 132 58 C 124 65 112 60 110 54"/>
+                <path d="M110 54 L 103 68"/>
+                <path d="M110 54 L 117 68"/>
+              </g>
+            </g>
+            <path d="M26 118 l2.4 6.4 6.4 2.4 -6.4 2.4 -2.4 6.4 -2.4 -6.4 -6.4 -2.4 6.4 -2.4 z" fill="#D9B896" stroke="none"/>
+            <path d="M198 150 l2.4 6.4 6.4 2.4 -6.4 2.4 -2.4 6.4 -2.4 -6.4 -6.4 -2.4 6.4 -2.4 z" fill="#D9B896" stroke="none" opacity=".6"/>
+          </svg>
+        </div>
+
+        <button class="btn" id="r3-open">拆开礼物</button>
+
+        <div class="gift-reveal" id="gift-reveal">
+          <div class="gift-emoji" id="gift-emoji">🎁</div>
+          <div class="gift-name" id="gift-name"></div>
+          <p class="gift-desc" id="gift-desc"></p>
+          <button class="btn" style="margin-top:26px" onclick="goTo('screen-final')">最后，想对你说 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 最后 · 想对你说 -->
+    <section class="screen" id="screen-final">
+      <header class="topbar">
+        <div class="brand"><span class="heart">♡</span><span id="final-label">最后想对你说</span></div>
+        <div class="pageno">05 / 05</div>
+      </header>
+      <div class="final-stage">
+        <div class="heart-ring">♡</div>
+        <h2 class="final-title" id="final-title">最后想对你说</h2>
+        <div class="letter">
+          <div id="final-letter"></div>
+          <div class="sign" id="final-sign"></div>
+        </div>
+        <div class="final-done" id="final-done">3 轮惊喜全部完成</div>
+        <button class="btn" onclick="burstHearts()" id="final-button">收好这份心意</button>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="confetti-layer" id="confetti-layer"></div>
+
+<script>
+/* =====================================================================
+   内容配置区 —— 改这里就行，所有文案集中在此
+   ===================================================================== */
+const CONTENT = {
+  brand: "只给你一个人",
+  sender: "陈靖雯",
+  receiver: "耿晨皓",
+
+  // 首页
+  title1: "我们一起过的第一个生日",
+  title2: "我把心意装进了盲盒",
+  homeSub: "从一个惊喜开始，一点点拆给你看",
+  homeRounds: "3 轮惊喜等你拆开",
+  homeButton: "打开礼物",
+
+  // 第 1 轮：猜猜看（三张卡）
+  round1: {
+    label: "第 1 轮 · 猜猜看",
+    title: "先拆三个小惊喜",
+    hint: "点开一张卡片，看看是什么",
+    cards: [
+      { icon: "☁️", title: "真心话", tag: "先逗你一下",
+        text: "其实这一轮没有礼物啦～\n就是想告诉你：今天你是全宇宙最幸运的人。😝" },
+      { icon: "😝", title: "小惊喜", tag: "开胃小菜",
+        text: "猜错啦！真正的大奖还在后面呢，别急～" },
+      { icon: "🎁", title: "小任务", tag: "先做一件事",
+        text: "奖励你：可以对我说一句「我也想你」，说完再去下一轮～" }
+    ]
+  },
+
+  // 第 2 轮：回忆小考验（一道题）
+  round2: {
+    label: "第 2 轮 · 回忆小考验",
+    title: "考考你，还记得吗",
+    hint: "答对了，才能进入下一轮哦",
+    question: "我们第一次一起过生日，是在哪里呀？",
+    options: [
+      { emoji: "🏠", text: "在家里点蜡烛" },
+      { emoji: "🍰", text: "在蛋糕店" },
+      { emoji: "🌃", text: "在某个城市街头" }
+    ],
+    answer: 0, // 正确选项的索引（从 0 开始）
+    correct: "答对啦，你果然都记得 💗",
+    wrong: "再想想～答案就藏在我们的回忆里"
+  },
+
+  // 第 3 轮：真正的礼物
+  round3: {
+    label: "第 3 轮 · 真正的礼物",
+    title: "真正的礼物",
+    hint: "拆开看看，里面是什么？",
+    openButton: "拆开礼物",
+    giftEmoji: "🎁",
+    giftName: "（真正的生日礼物 · 占位）",
+    giftDesc: "这里会写上你真正要送给他的礼物。\n等你把礼物内容告诉我，我再填进来～"
+  },
+
+  // 最后：想对你说
+  final: {
+    label: "最后想对你说",
+    title: "最后想对你说",
+    letter: "晨皓，生日快乐。\n\n（这里放你想对他说的话 · 占位）\n\n谢谢你出现在我的生命里，\n往后的每一个生日，都想陪你一起过。",
+    sign: "—— 陈靖雯",
+    done: "3 轮惊喜全部完成",
+    button: "收好这份心意"
+  }
+};
+
+/* =====================================================================
+   渲染：把 CONTENT 填进页面
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+
+function fill() {
+  // 首页
+  $("home-brand").textContent = CONTENT.brand;
+  $("home-title").innerHTML = `${CONTENT.title1}<br>${CONTENT.title2}`;
+  $("home-sub").textContent = CONTENT.homeSub;
+  $("home-sender").textContent = CONTENT.sender;
+  $("home-receiver").textContent = CONTENT.receiver;
+  $("home-rounds").textContent = CONTENT.homeRounds;
+  $("home-button").textContent = CONTENT.homeButton;
+
+  // 第 1 轮
+  $("r1-label").textContent = CONTENT.round1.label;
+  $("r1-title").textContent = CONTENT.round1.title;
+  $("r1-hint").textContent = CONTENT.round1.hint;
+  const cardsBox = $("r1-cards");
+  cardsBox.innerHTML = "";
+  CONTENT.round1.cards.forEach((c, i) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-inner">
+        <div class="card-face card-front">
+          <div class="icon">${c.icon}</div>
+          <div class="meta"><div class="t">${c.title}</div><div class="tag">${c.tag}</div></div>
+          <div class="arrow">→</div>
+        </div>
+        <div class="card-face card-back">${c.text.replace(/\n/g, "<br>")}</div>
+      </div>`;
+    card.addEventListener("click", () => card.classList.toggle("flipped"));
+    cardsBox.appendChild(card);
+  });
+
+  // 第 2 轮
+  $("r2-label").textContent = CONTENT.round2.label;
+  $("r2-title").textContent = CONTENT.round2.title;
+  $("r2-hint").textContent = CONTENT.round2.hint;
+  $("r2-question").textContent = CONTENT.round2.question;
+  const optsBox = $("r2-opts");
+  optsBox.innerHTML = "";
+  CONTENT.round2.options.forEach((o, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.innerHTML = `<span class="em">${o.emoji}</span><span>${o.text}</span>`;
+    b.addEventListener("click", () => answer(i, b));
+    optsBox.appendChild(b);
+  });
+
+  // 第 3 轮
+  $("r3-label").textContent = CONTENT.round3.label;
+  $("r3-title").textContent = CONTENT.round3.title;
+  $("r3-hint").textContent = CONTENT.round3.hint;
+  $("r3-open").textContent = CONTENT.round3.openButton;
+  $("gift-emoji").textContent = CONTENT.round3.giftEmoji;
+  $("gift-name").textContent = CONTENT.round3.giftName;
+  $("gift-desc").textContent = CONTENT.round3.giftDesc;
+
+  // 最后
+  $("final-label").textContent = CONTENT.final.label;
+  $("final-title").textContent = CONTENT.final.title;
+  $("final-letter").innerHTML = CONTENT.final.letter.replace(/\n/g, "<br>");
+  $("final-sign").textContent = CONTENT.final.sign;
+  $("final-done").textContent = CONTENT.final.done;
+  $("final-button").textContent = CONTENT.final.button;
+}
+
+/* =====================================================================
+   导航与交互
+   ===================================================================== */
+function goTo(id) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $(id).classList.add("active");
+  window.scrollTo({ top: 0, behavior: "auto" });
+}
+
+// 第 2 轮：答题
+function answer(index, el) {
+  const r2 = CONTENT.round2;
+  const fb = $("r2-feedback");
+  if (index === r2.answer) {
+    el.classList.add("correct");
+    fb.textContent = r2.correct;
+    fb.classList.add("ok");
+    $("r2-next").disabled = false;
+    document.querySelectorAll("#r2-opts .opt").forEach((o) => (o.style.pointerEvents = "none"));
+  } else {
+    el.classList.add("wrong");
+    fb.textContent = r2.wrong;
+    fb.classList.remove("ok");
+    setTimeout(() => el.classList.remove("wrong"), 450);
+  }
+}
+
+// 第 3 轮：拆礼物
+$("r3-open").addEventListener("click", function () {
+  const box = $("giftbox");
+  const wrap = document.querySelector(".giftbox-wrap");
+  const reveal = $("gift-reveal");
+  const openBtn = $("r3-open");
+  if (box.classList.contains("open")) return;
+
+  openBtn.disabled = true;
+  openBtn.textContent = "正在拆开…";
+  box.classList.add("shake");
+
+  setTimeout(() => {
+    box.classList.remove("shake");
+    box.classList.add("open");
+    confetti(90);
+  }, 520);
+
+  // 盒子淡出，礼物居中登场
+  setTimeout(() => wrap.classList.add("hide"), 1050);
+  setTimeout(() => {
+    wrap.style.display = "none";
+    openBtn.style.display = "none";
+    $("r3-hint").textContent = "铛铛——这就是给你的生日礼物";
+    reveal.classList.add("show");
+  }, 1550);
+});
+
+// 彩屑
+function confetti(count = 60) {
+  const layer = $("confetti-layer");
+  const colors = ["#D9B896", "#F7ECE3", "#F6E0C4", "#E7C9B6", "#FFFFFF", "#EFD9C4"];
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement("div");
+    p.className = "confetti";
+    const size = 6 + Math.random() * 8;
+    p.style.left = Math.random() * 100 + "%";
+    p.style.width = size + "px";
+    p.style.height = size * 1.6 + "px";
+    p.style.background = colors[(Math.random() * colors.length) | 0];
+    p.style.animationDuration = 2.4 + Math.random() * 2 + "s";
+    p.style.animationDelay = Math.random() * 0.4 + "s";
+    p.style.opacity = 0.85;
+    layer.appendChild(p);
+    setTimeout(() => p.remove(), 5000);
+  }
+}
+
+// 最终按钮：爱心彩屑
+function burstHearts() {
+  confetti(120);
+}
+
+fill();
+</script>
+</body>
+</html>
