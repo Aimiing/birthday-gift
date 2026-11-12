@@ -262,6 +262,16 @@
     color: var(--ink); font-size: 34px; margin-bottom: 20px;
   }
   .final-title { font-family: var(--serif); font-weight: 900; font-size: clamp(22px, 6.2vw, 27px); margin: 0 0 18px; }
+  .final-photo {
+    width: 100%; max-width: 360px;
+    margin: 0 0 20px; border-radius: 20px; overflow: hidden;
+    border: 1px solid var(--border); background: var(--card1);
+    box-shadow: 0 22px 46px -30px rgba(43,38,34,.55);
+    opacity: 0; transform: translateY(12px) scale(.98);
+    animation: photoIn .85s cubic-bezier(.22,.8,.36,1) .18s forwards;
+  }
+  .final-photo img { display: block; width: 100%; height: auto; }
+  @keyframes photoIn { to { opacity: 1; transform: none; } }
   .letter {
     background: var(--card1); border: 1px solid var(--border); border-radius: 22px;
     padding: 30px 26px; max-width: 360px; width: 100%;
@@ -439,6 +449,9 @@
       <div class="final-stage">
         <div class="heart-ring">♡</div>
         <h2 class="final-title" id="final-title">最后想对你说</h2>
+        <div class="final-photo">
+          <img src="photo.jpg" alt="我们的合照" loading="lazy" decoding="async">
+        </div>
         <div class="letter">
           <div id="final-letter"></div>
           <div class="sign" id="final-sign"></div>
